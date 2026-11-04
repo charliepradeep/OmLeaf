@@ -1,0 +1,25 @@
+included:
+  - OmLeaf
+  - OmLeafTests
+disabled_rules:
+  - trailing_comma
+  - todo
+  - force_try
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+line_length:
+  warning: 140
+  error: 200
+file_length:
+  warning: 500
+function_body_length:
+  warning: 80
+function_parameter_count:
+  warning: 8
+  error: 12
+type_body_length:
+  warning: 350
+identifier_name:
+  min_length: 1
+  excluded: [id, db, ok]
