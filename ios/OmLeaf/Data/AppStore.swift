@@ -45,8 +45,9 @@ final class AppStore: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.settings = Self.load(AppSettings.self, key: Key.settings, from: defaults) ?? AppSettings()
-        self.settings.sound = self.settings.sound.sanitized()
+        var loaded = Self.load(AppSettings.self, key: Key.settings, from: defaults) ?? AppSettings()
+        loaded.sound = loaded.sound.sanitized()
+        self.settings = loaded
         self.custom = Self.load([CustomPractice].self, key: Key.custom, from: defaults) ?? []
         self.history = Self.load([SessionRecord].self, key: Key.history, from: defaults) ?? []
     }
