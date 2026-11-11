@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.charrlie.omleaf.data.AppSettings
 import com.charrlie.omleaf.data.CustomPractice
 import com.charrlie.omleaf.data.Repository
+import com.charrlie.omleaf.domain.MeditationSettings
 import com.charrlie.omleaf.domain.PlanRequest
 import com.charrlie.omleaf.domain.SessionRecord
 import com.charrlie.omleaf.domain.SoundSettings
@@ -36,6 +37,7 @@ class AppViewModel(private val repo: Repository) : ViewModel() {
     var pending: SessionSpec? by mutableStateOf(null)
 
     fun saveSound(sound: SoundSettings) = viewModelScope.launch { repo.saveSound(sound) }
+    fun saveMeditation(m: MeditationSettings) = viewModelScope.launch { repo.saveMeditation(m) }
     fun saveHaptics(on: Boolean) = viewModelScope.launch { repo.saveHaptics(on) }
     fun saveCustom(item: CustomPractice) = viewModelScope.launch { repo.saveCustom(item) }
     fun deleteCustom(id: String) = viewModelScope.launch { repo.deleteCustom(id) }

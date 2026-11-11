@@ -6,12 +6,15 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.charrlie.omleaf.domain.BreathPattern
 import com.charrlie.omleaf.domain.Category
 import com.charrlie.omleaf.domain.ChantSound
 import com.charrlie.omleaf.domain.Kind
+import com.charrlie.omleaf.domain.MeditationSettings
+import com.charrlie.omleaf.domain.MeditationStyle
 import com.charrlie.omleaf.domain.Practice
 import com.charrlie.omleaf.domain.SessionRecord
 import com.charrlie.omleaf.domain.SoundSettings
@@ -56,6 +59,7 @@ data class AppSettings(
     val sound: SoundSettings = SoundSettings(),
     val haptics: Boolean = true,
     val acknowledgedNote: Boolean = false,
+    val meditation: MeditationSettings = MeditationSettings(),
 )
 
 /** Everything is stored on this phone with DataStore. Nothing leaves the device. */
@@ -72,6 +76,10 @@ class Repository(private val context: Context) {
         val acknowledged = booleanPreferencesKey("acknowledged")
         val custom = stringPreferencesKey("custom")
         val history = stringPreferencesKey("history")
+        val medMinutes = intPreferencesKey("med_minutes")
+        val medStyle = stringPreferencesKey("med_style")
+        val medBellEvery = intPreferencesKey("med_bell_every")
+        val medBells = booleanPreferencesKey("med_bells")
     }
 
     val settings: Flow<AppSettings> = context.store.data.map { p ->
@@ -86,6 +94,12 @@ class Repository(private val context: Context) {
             ).sanitized(),
             haptics = p[Keys.haptics] ?: true,
             acknowledgedNote = p[Keys.acknowledged] ?: false,
+            meditation = MeditationSettings(
+                minutes = p[Keys.medMinutes] ?: MeditationSettings().minutes,
+                style = runCatching { MeditationStyle.valueOf(p[Keys.medStyle].orEmpty()) }.getOrDefault(MeditationStyle.DRONE),
+                bellEveryMinutes = p[Keys.medBellEvery] ?: 0,
+                bells = p[Keys.medBells] ?: true,
+            ).sanitized(),
         )
     }
 
@@ -108,6 +122,16 @@ class Repository(private val context: Context) {
             it[Keys.guide] = s.guideTone
             it[Keys.drone] = s.drone
             it[Keys.volume] = s.volume
+        }
+    }
+
+    suspend fun saveMeditation(m: MeditationSettings) {
+        val s = m.sanitized()
+        context.store.edit {
+            it[Keys.medMinutes] = s.minutes
+            it[Keys.medStyle] = s.style.name
+            it[Keys.medBellEvery] = s.bellEveryMinutes
+            it[Keys.medBells] = s.bells
         }
     }
 

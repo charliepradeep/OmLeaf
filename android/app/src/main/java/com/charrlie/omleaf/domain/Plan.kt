@@ -13,11 +13,20 @@ data class Step(
     val chant: ChantSound = ChantSound.NONE,
     val stroke: Int = 0,
     val strokeTotal: Int = 0,
+    /** For meditation steps: ring a bowl as this step begins. */
+    val bell: Boolean = false,
 ) {
     val endMs: Long get() = startMs + durationMs
 }
 
-class Plan(val steps: List<Step>, val rounds: Int) {
+class Plan(
+    val steps: List<Step>,
+    val rounds: Int,
+    /** Non-null for a sound-only meditation. */
+    val style: MeditationStyle? = null,
+    /** The tone fades out over this long before the end. */
+    val fadeOutMs: Long = 0L,
+) {
     val totalMs: Long = steps.lastOrNull()?.endMs ?: 0L
 
     /** The step playing at [ms]; clamped to the first or last step. */
@@ -52,10 +61,20 @@ data class PlanRequest(
     val inhaleSides: List<Nostril> = listOf(Nostril.BOTH),
     val pump: PumpSettings? = null,
     val restSeconds: Double = 0.0,
+    val meditation: MeditationSettings? = null,
 )
 
 object Planner {
     const val MAX_ROUNDS = 200
+    const val CLOSING_MS = 6_000L
+    const val CHANT_MS = 12_000L
+    const val PAUSE_MS = 4_000L
+    const val FADE_OUT_MS = 15_000L
+
+    /** A sound-only meditation: no breaths, just listening. */
+    fun meditationRequest(m: MeditationSettings) = PlanRequest(
+        kind = Kind.MEDITATION, pattern = BreathPattern(4.0, 0.0, 6.0, 0.0), rounds = 1, chant = ChantSound.NONE, meditation = m,
+    )
 
     fun requestFor(practice: Practice) = PlanRequest(
         kind = practice.kind,
@@ -68,6 +87,7 @@ object Planner {
     )
 
     fun build(request: PlanRequest): Plan {
+        if (request.kind == Kind.MEDITATION) return buildMeditation((request.meditation ?: MeditationSettings()).sanitized())
         val rounds = request.rounds.coerceIn(1, MAX_ROUNDS)
         val steps = ArrayList<Step>()
         var t = 0L
@@ -105,7 +125,46 @@ object Planner {
                     if (r < rounds) add(r, Phase.REST, request.restSeconds.coerceIn(0.0, 300.0))
                 }
             }
+            Kind.MEDITATION -> Unit // handled above
         }
         return Plan(steps, rounds)
+    }
+
+    /**
+     * Listening steps for the whole time, ending with a short closing step. With interval bells the time is cut into
+     * segments, and a segment starts with a bowl. In AUM style a segment is filled with chant, pause, chant, pause...
+     */
+    private fun buildMeditation(m: MeditationSettings): Plan {
+        val totalMs = m.minutes * 60_000L
+        val mainMs = totalMs - minOf(CLOSING_MS, totalMs / 2)
+        val interval = if (m.bellEveryMinutes in 1 until m.minutes) m.bellEveryMinutes * 60_000L else mainMs
+        val steps = ArrayList<Step>()
+        var t = 0L
+
+        fun add(ms: Long, chant: ChantSound, bell: Boolean) {
+            if (ms <= 0) return
+            steps += Step(steps.size, 1, Phase.LISTEN, t, ms, chant = chant, bell = bell)
+            t += ms
+        }
+
+        var segmentStart = 0L
+        var segment = 0
+        while (segmentStart < mainMs) {
+            val segmentEnd = minOf(segmentStart + interval, mainMs)
+            var bell = if (segment == 0) m.bells else true
+            if (m.style == MeditationStyle.AUM) {
+                while (t < segmentEnd) {
+                    add(minOf(CHANT_MS, segmentEnd - t), ChantSound.AUM, bell)
+                    bell = false
+                    add(minOf(PAUSE_MS, segmentEnd - t), ChantSound.NONE, false)
+                }
+            } else {
+                add(segmentEnd - t, ChantSound.NONE, bell)
+            }
+            segmentStart = segmentEnd
+            segment++
+        }
+        add(totalMs - t, ChantSound.NONE, m.bells)
+        return Plan(steps, 1, m.style, minOf(FADE_OUT_MS, totalMs / 2))
     }
 }

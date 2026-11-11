@@ -43,6 +43,7 @@ import com.charrlie.omleaf.domain.Planner
 import com.charrlie.omleaf.domain.SoundSettings
 import com.charrlie.omleaf.ui.AppViewModel
 import com.charrlie.omleaf.ui.components.Card
+import com.charrlie.omleaf.ui.components.PitchControl
 import com.charrlie.omleaf.ui.components.LargeTitle
 import com.charrlie.omleaf.ui.components.SectionTitle
 import kotlinx.coroutines.delay
@@ -84,23 +85,7 @@ private fun SettingsContent(vm: AppViewModel, settings: AppSettings) {
                     onValueChangeFinished = { vm.saveSound(sound) },
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
-                Text("Pitch: ${"%.1f".format(sound.frequencyHz)} Hz", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(horizontal = 16.dp))
-                FlowRow(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FrequencyPresets.all.forEach { f ->
-                        FilterChip(
-                            selected = kotlin.math.abs(sound.frequencyHz - f.hz) < 0.05,
-                            onClick = { sound = sound.copy(frequencyHz = f.hz); vm.saveSound(sound) },
-                            label = { Text("${f.name} · ${"%.1f".format(f.hz)}") },
-                        )
-                    }
-                }
-                Slider(
-                    value = sound.frequencyHz.toFloat(),
-                    onValueChange = { sound = sound.copy(frequencyHz = it.toDouble()) },
-                    onValueChangeFinished = { vm.saveSound(sound) },
-                    valueRange = FrequencyPresets.MIN_HZ.toFloat()..FrequencyPresets.MAX_HZ.toFloat(),
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
+                PitchControl(sound.frequencyHz, onChange = { hz, final -> val s = sound.copy(frequencyHz = hz); if (final) { sound = s; vm.saveSound(s) } else { sound = s } })
                 SwitchRow("Phase chimes", sound.chimes) { sound = sound.copy(chimes = it); vm.saveSound(sound) }
                 SwitchRow("Guide tone while chanting", sound.guideTone) { sound = sound.copy(guideTone = it); vm.saveSound(sound) }
                 SwitchRow("Soft drone", sound.drone) { sound = sound.copy(drone = it); vm.saveSound(sound) }

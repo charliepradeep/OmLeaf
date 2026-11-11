@@ -61,7 +61,9 @@ import com.charrlie.omleaf.ui.components.formatDuration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.time.LocalDate
+import kotlin.math.PI
 import kotlin.math.ceil
+import kotlin.math.sin
 
 private const val MIN_SAVED_SECONDS = 30
 
@@ -140,12 +142,14 @@ fun SessionScreen(vm: AppViewModel, spec: SessionSpec, onClose: () -> Unit) {
 
     // A short tap at every change of phase.
     LaunchedEffect(step.index, started) {
-        if (started && !finished && spec.haptics && step.phase != Phase.STROKE) vibrate(context)
+        // A meditation is silent to the touch except for the bowls.
+        val meditating = plan.style != null
+        if (started && !finished && spec.haptics && step.phase != Phase.STROKE && (!meditating || step.bell)) vibrate(context)
     }
 
     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
         when {
-            finished -> Finished(plan.totalMs, plan.rounds, onClose)
+            finished -> Finished(plan.totalMs, plan.rounds, plan.style != null, onClose)
             !started -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Get comfortable", style = MaterialTheme.typography.titleLarge)
                 Text("$countdown", fontSize = 88.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colorScheme.primary)
@@ -187,13 +191,16 @@ private fun Running(
     onPauseResume: () -> Unit,
     onStop: () -> Unit,
 ) {
-    val scale = circleScale(step, progress)
+    val meditation = plan.style != null
+    // In a meditation the circle only glows very slowly; it must not suggest a breathing pace.
+    val scale = if (meditation) 0.8f + 0.03f * sin(elapsed / 1000.0 * 2 * PI / 20.0).toFloat() else circleScale(step, progress)
     val primary = MaterialTheme.colorScheme.primary
     val color = when (step.phase) {
         Phase.INHALE -> primary
         Phase.HOLD_IN, Phase.HOLD_OUT -> MaterialTheme.colorScheme.tertiary
         Phase.EXHALE, Phase.STROKE -> MaterialTheme.colorScheme.secondary
         Phase.REST -> MaterialTheme.colorScheme.onSurfaceVariant
+        Phase.LISTEN -> primary
     }
     val ring = MaterialTheme.colorScheme.outlineVariant
     val remainingSeconds = ceil((step.endMs - elapsed) / 1000.0).toInt().coerceAtLeast(0)
@@ -201,7 +208,10 @@ private fun Running(
 
     Column(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, style = MaterialTheme.typography.titleMedium)
-        Text("Round ${step.round} of ${plan.rounds}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            if (meditation) plan.style?.label.orEmpty() else "Round ${step.round} of ${plan.rounds}",
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(300.dp)) {
@@ -214,8 +224,12 @@ private fun Running(
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    if (step.phase == Phase.STROKE) "${step.stroke}/${step.strokeTotal}" else "${remainingSeconds}",
-                    fontSize = 56.sp, fontWeight = FontWeight.Light, color = Color.White,
+                    when {
+                        meditation -> formatDuration((plan.totalMs - elapsed).coerceAtLeast(0))
+                        step.phase == Phase.STROKE -> "${step.stroke}/${step.strokeTotal}"
+                        else -> "$remainingSeconds"
+                    },
+                    fontSize = if (meditation) 44.sp else 56.sp, fontWeight = FontWeight.Light, color = Color.White,
                 )
             }
         }
@@ -224,8 +238,8 @@ private fun Running(
         if (step.nostril != Nostril.BOTH) {
             Text(step.nostril.label, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         }
-        if (step.phase == Phase.EXHALE && step.chant != ChantSound.NONE) ChantLetters(step.chant, progress)
-        Text(
+        if ((step.phase == Phase.EXHALE || step.phase == Phase.LISTEN) && step.chant != ChantSound.NONE) ChantLetters(step.chant, progress)
+        if (!meditation) Text(
             next?.let { "Next: ${it.phase.label}" + (if (it.nostril != Nostril.BOTH) " · ${it.nostril.label}" else "") } ?: "Last breath",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp),
@@ -261,16 +275,16 @@ private fun ChantLetters(chant: ChantSound, progress: Double) {
 }
 
 @Composable
-private fun Finished(totalMs: Long, rounds: Int, onClose: () -> Unit) {
+private fun Finished(totalMs: Long, rounds: Int, meditation: Boolean, onClose: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Well done", style = MaterialTheme.typography.headlineLarge)
         Text(
-            "$rounds rounds · ${formatDuration(totalMs)}",
+            if (meditation) "Sound meditation · ${formatDuration(totalMs)}" else "$rounds rounds · ${formatDuration(totalMs)}",
             style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),
         )
         Text(
-            "Breathe normally and sit quietly for a moment before you get up.",
+            if (meditation) "Stay with the quiet for a moment before you get up." else "Breathe normally and sit quietly for a moment before you get up.",
             textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 24.dp),
         )
@@ -288,6 +302,7 @@ internal fun circleScale(step: Step, p: Double): Float {
         Phase.HOLD_OUT -> 0.45
         Phase.STROKE -> 0.55 + 0.35 * (1 - p)
         Phase.REST -> 0.7
+        Phase.LISTEN -> 0.8
     }
     return v.toFloat()
 }

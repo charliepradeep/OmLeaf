@@ -41,6 +41,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.charrlie.omleaf.data.Repository
 import com.charrlie.omleaf.ui.history.ProgressScreen
+import com.charrlie.omleaf.ui.meditate.MeditationScreen
 import com.charrlie.omleaf.ui.home.PracticesScreen
 import com.charrlie.omleaf.ui.session.SessionScreen
 import com.charrlie.omleaf.ui.settings.SettingsScreen
@@ -52,6 +53,7 @@ private object Routes {
     const val PROGRESS = "progress"
     const val SETTINGS = "settings"
     const val SETUP = "setup/{id}"
+    const val MEDITATE = "meditate"
     const val SESSION = "session"
     fun setup(id: String) = "setup/$id"
 }
@@ -102,7 +104,12 @@ fun AppRoot(repository: Repository) {
             startDestination = Routes.PRACTICES,
             modifier = Modifier.padding(inner).consumeWindowInsets(inner),
         ) {
-            composable(Routes.PRACTICES) { PracticesScreen(vm, onOpen = { nav.navigate(Routes.setup(it)) }) }
+            composable(Routes.PRACTICES) {
+                PracticesScreen(vm, onOpen = { nav.navigate(Routes.setup(it)) }, onMeditate = { nav.navigate(Routes.MEDITATE) })
+            }
+            composable(Routes.MEDITATE) {
+                MeditationScreen(vm = vm, onBegin = { nav.navigate(Routes.SESSION) }, onBack = { nav.popBackStack() })
+            }
             composable(Routes.PROGRESS) { ProgressScreen(vm) }
             composable(Routes.SETTINGS) { SettingsScreen(vm) }
             composable(Routes.SETUP, arguments = listOf(navArgument("id") { type = NavType.StringType })) {

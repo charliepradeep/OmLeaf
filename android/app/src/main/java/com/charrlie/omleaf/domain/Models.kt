@@ -8,6 +8,8 @@ enum class Phase(val label: String) {
     HOLD_OUT("Hold"),
     STROKE("Pump"),
     REST("Breathe normally"),
+    /** Sound-only meditation: nothing to do but listen. */
+    LISTEN("Listen"),
 }
 
 /** Which nostril is open for a step (the other is closed). BOTH for ordinary breathing and for holds. */
@@ -81,7 +83,31 @@ enum class Category(val title: String) {
 }
 
 /** How a practice turns into steps. */
-enum class Kind { RHYTHM, ALTERNATE, PUMP }
+enum class Kind { RHYTHM, ALTERNATE, PUMP, MEDITATION }
+
+/** What the sound-only meditation plays. */
+enum class MeditationStyle(val label: String, val blurb: String) {
+    DRONE("Steady tone", "A soft, continuous tone to rest in."),
+    BOWL("Singing bowl", "Quiet, with a bowl struck at the start, the end and at the intervals you choose."),
+    AUM("AUM chanting", "A sung AUM again and again, with a short pause between."),
+}
+
+/** Settings for the sound-only meditation. There are no breaths to follow. */
+data class MeditationSettings(
+    val minutes: Int = 10,
+    val style: MeditationStyle = MeditationStyle.DRONE,
+    /** Ring a bowl every this many minutes. 0 means no interval bells. */
+    val bellEveryMinutes: Int = 0,
+    /** A bowl at the very start and a closing bowl at the end. */
+    val bells: Boolean = true,
+) {
+    fun sanitized() = copy(minutes = minutes.coerceIn(MIN_MINUTES, MAX_MINUTES), bellEveryMinutes = bellEveryMinutes.coerceIn(0, MAX_MINUTES))
+
+    companion object {
+        const val MIN_MINUTES = 1
+        const val MAX_MINUTES = 180
+    }
+}
 
 data class Practice(
     val id: String,

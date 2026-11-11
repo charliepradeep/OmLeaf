@@ -57,7 +57,7 @@ class SynthStatsTest {
 
     @Test fun frequencyIsClamped() {
         assertEquals(FrequencyPresets.MAX_HZ, SoundSettings(frequencyHz = 5000.0).sanitized().frequencyHz, 0.0)
-        assertEquals(FrequencyPresets.MIN_HZ, SoundSettings(frequencyHz = 1.0).sanitized().frequencyHz, 0.0)
+        assertEquals(FrequencyPresets.MIN_HZ, SoundSettings(frequencyHz = -1.0).sanitized().frequencyHz, 0.0)
     }
 
     private fun rec(day: Long, sec: Int = 600) = SessionRecord(day, "x", sec, 5)

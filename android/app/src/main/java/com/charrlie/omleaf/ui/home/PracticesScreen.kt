@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,7 +34,7 @@ import com.charrlie.omleaf.ui.components.formatDuration
 import java.time.LocalDate
 
 @Composable
-fun PracticesScreen(vm: AppViewModel, onOpen: (String) -> Unit) {
+fun PracticesScreen(vm: AppViewModel, onOpen: (String) -> Unit, onMeditate: () -> Unit) {
     val custom by vm.custom.collectAsStateWithLifecycle()
     val history by vm.history.collectAsStateWithLifecycle()
     val stats = StatsCalculator.compute(history, LocalDate.now().toEpochDay())
@@ -53,6 +54,21 @@ fun PracticesScreen(vm: AppViewModel, onOpen: (String) -> Unit) {
                             "${stats.last7Minutes.last()} min today · ${stats.last7Minutes.sum()} min this week",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        item(key = "meditate") {
+            Card(onClick = onMeditate) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Filled.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Column(Modifier.weight(1f)) {
+                        Text("Sound meditation", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Just listen: a steady tone, a singing bowl or AUM chanting. No breaths to follow.",
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
