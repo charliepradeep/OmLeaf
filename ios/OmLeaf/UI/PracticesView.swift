@@ -5,6 +5,16 @@ struct PracticesView: View {
 
     var body: some View {
         List {
+            Section {
+                NavigationLink(value: "meditate") {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Label("Sound meditation", systemImage: "waveform").font(.headline)
+                        Text("Just listen: a steady tone, a singing bowl or AUM chanting. No breaths to follow.")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
             ForEach(Practices.grouped(), id: \.category) { group in
                 Section(group.category.title) {
                     ForEach(group.practices) { practice in
@@ -23,7 +33,13 @@ struct PracticesView: View {
             }
         }
         .navigationTitle("OmLeaf")
-        .navigationDestination(for: String.self) { SetupView(practiceId: $0) }
+        .navigationDestination(for: String.self) { id in
+            if id == "meditate" {
+                MeditationView()
+            } else {
+                SetupView(practiceId: id)
+            }
+        }
     }
 }
 

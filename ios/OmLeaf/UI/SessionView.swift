@@ -40,7 +40,7 @@ struct SessionView: View {
             } else {
                 RunningView(
                     title: spec.title, plan: plan, step: plan.steps[stepIndex], progress: plan.progressAt(ms: elapsed),
-                    elapsed: elapsed, paused: paused,
+                    elapsed: elapsed, paused: paused, meditation: plan.style,
                     onPauseResume: togglePause, onStop: { confirmEnd = true }
                 )
             }
@@ -51,7 +51,9 @@ struct SessionView: View {
             if phase == .background && started && !finished { pause() }
         }
         .onChange(of: stepIndex) { _, _ in
-            if started && !finished && spec.haptics && plan.steps[stepIndex].phase != .stroke {
+            let step = plan.steps[stepIndex]
+            // A meditation is silent to the touch except for the bowls.
+            if started && !finished && spec.haptics && step.phase != .stroke && (plan.style == nil || step.bell) {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
         }
@@ -62,7 +64,7 @@ struct SessionView: View {
         }
         .confirmationDialog("End this session?", isPresented: $confirmEnd, titleVisibility: .visible) {
             Button("End", role: .destructive) {
-                saveIfWorthIt(seconds: elapsed / 1000, rounds: plan.steps[stepIndex].round)
+                saveIfWorthIt(seconds: elapsed / 1000, rounds: plan.style != nil ? 0 : plan.steps[stepIndex].round)
                 onClose()
             }
             Button("Keep going", role: .cancel) {}
@@ -89,9 +91,13 @@ struct SessionView: View {
     private var finishedView: some View {
         VStack(spacing: 12) {
             Text("Well done").font(.largeTitle.bold())
-            Text("\(plan.rounds) rounds · \(formatDuration(ms: plan.totalMs))")
+            Text(plan.style != nil
+                 ? "Sound meditation · \(formatDuration(ms: plan.totalMs))"
+                 : "\(plan.rounds) rounds · \(formatDuration(ms: plan.totalMs))")
                 .font(.headline).foregroundStyle(.secondary)
-            Text("Breathe normally and sit quietly for a moment before you get up.")
+            Text(plan.style != nil
+                 ? "Stay with the quiet for a moment before you get up."
+                 : "Breathe normally and sit quietly for a moment before you get up.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.vertical, 16)
@@ -121,7 +127,7 @@ struct SessionView: View {
         paused = runner.paused
         if elapsed >= plan.totalMs {
             finished = true
-            saveIfWorthIt(seconds: plan.totalMs / 1000, rounds: plan.rounds)
+            saveIfWorthIt(seconds: plan.totalMs / 1000, rounds: plan.style != nil ? 0 : plan.rounds)
             Task {
                 // Let the last chime ring, then release the audio.
                 try? await Task.sleep(nanoseconds: 2_500_000_000)
@@ -159,13 +165,14 @@ private struct RunningView: View {
     let progress: Double
     let elapsed: Int
     let paused: Bool
+    let meditation: MeditationStyle?
     let onPauseResume: () -> Void
     let onStop: () -> Void
 
     var body: some View {
         VStack(spacing: 6) {
             Text(title).font(.headline)
-            Text("Round \(step.round) of \(plan.rounds)").font(.subheadline).foregroundStyle(.secondary)
+            Text(meditation?.label ?? "Round \(step.round) of \(plan.rounds)").font(.subheadline).foregroundStyle(.secondary)
             Spacer(minLength: 0)
             breathCircle
             Spacer(minLength: 0)
@@ -173,10 +180,12 @@ private struct RunningView: View {
             if step.nostril != .both {
                 Text(step.nostril.label).font(.headline).foregroundStyle(Color.omTeal)
             }
-            if step.phase == .exhale && step.chant != .none {
+            if (step.phase == .exhale || step.phase == .listen) && step.chant != .none {
                 ChantLetters(chant: step.chant, progress: progress)
             }
-            Text(nextText).font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
+            if meditation == nil {
+                Text(nextText).font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
+            }
             controls
         }
         .padding(.horizontal, 24)
@@ -189,23 +198,32 @@ private struct RunningView: View {
         case .holdIn, .holdOut: return .omViolet
         case .exhale, .stroke: return .omSaffron
         case .rest: return .secondary
+        case .listen: return .omTeal
         }
     }
 
     private var breathCircle: some View {
-        let scale = circleScale(step: step, progress: progress)
+        // In a meditation the circle only glows very slowly; it must not suggest a breathing pace.
+        let scale = meditation != nil
+            ? 0.8 + 0.03 * sin(Double(elapsed) / 1000 * 2 * Double.pi / 20)
+            : circleScale(step: step, progress: progress)
         let remaining = max(0, Int((Double(step.endMs - elapsed) / 1000).rounded(.up)))
         return ZStack {
             Circle().stroke(Color.secondary.opacity(0.3), lineWidth: 2)
             Circle().fill(phaseColor.opacity(0.16)).scaleEffect(scale)
             Circle().fill(phaseColor.opacity(0.40)).scaleEffect(scale * 0.8)
             Circle().fill(phaseColor.opacity(0.9)).scaleEffect(scale * 0.55)
-            Text(step.phase == .stroke ? "\(step.stroke)/\(step.strokeTotal)" : "\(remaining)")
-                .font(.system(size: 56, weight: .light, design: .rounded))
+            Text(centerText(remaining: remaining))
+                .font(.system(size: meditation != nil ? 44 : 56, weight: .light, design: .rounded))
                 .foregroundStyle(.white)
         }
         .frame(maxWidth: 300, maxHeight: 300)
         .aspectRatio(1, contentMode: .fit)
+    }
+
+    private func centerText(remaining: Int) -> String {
+        if meditation != nil { return formatDuration(ms: max(0, plan.totalMs - elapsed)) }
+        return step.phase == .stroke ? "\(step.stroke)/\(step.strokeTotal)" : "\(remaining)"
     }
 
     private var nextText: String {
@@ -259,6 +277,7 @@ func circleScale(step: Step, progress p: Double) -> Double {
     case .holdOut: return 0.45
     case .stroke: return 0.55 + 0.35 * (1 - p)
     case .rest: return 0.7
+    case .listen: return 0.8
     }
 }
 

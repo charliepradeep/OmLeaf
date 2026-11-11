@@ -9,6 +9,8 @@ extension Comparable {
 /// What the breath is doing during one step of a session.
 enum Phase: String, Codable {
     case inhale, holdIn, exhale, holdOut, stroke, rest
+    /// Sound-only meditation: nothing to do but listen.
+    case listen
 
     var label: String {
         switch self {
@@ -17,6 +19,7 @@ enum Phase: String, Codable {
         case .exhale: return "Exhale"
         case .stroke: return "Pump"
         case .rest: return "Breathe normally"
+        case .listen: return "Listen"
         }
     }
 }
@@ -135,7 +138,50 @@ enum Category: CaseIterable {
 
 /// How a practice turns into steps.
 enum Kind {
-    case rhythm, alternate, pump
+    case rhythm, alternate, pump, meditation
+}
+
+/// What the sound-only meditation plays.
+enum MeditationStyle: String, Codable, CaseIterable, Identifiable {
+    case drone, bowl, aum
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .drone: return "Steady tone"
+        case .bowl: return "Singing bowl"
+        case .aum: return "AUM chanting"
+        }
+    }
+
+    var blurb: String {
+        switch self {
+        case .drone: return "A soft, continuous tone to rest in."
+        case .bowl: return "Quiet, with a bowl struck at the start, the end and at the intervals you choose."
+        case .aum: return "A sung AUM again and again, with a short pause between."
+        }
+    }
+}
+
+/// Settings for the sound-only meditation. There are no breaths to follow.
+struct MeditationSettings: Codable, Equatable {
+    static let minMinutes = 1
+    static let maxMinutes = 180
+
+    var minutes = 10
+    var style = MeditationStyle.drone
+    /// Ring a bowl every this many minutes. 0 means no interval bells.
+    var bellEveryMinutes = 0
+    /// A bowl at the very start and a closing bowl at the end.
+    var bells = true
+
+    func sanitized() -> MeditationSettings {
+        var copy = self
+        copy.minutes = minutes.clamped(Self.minMinutes...Self.maxMinutes)
+        copy.bellEveryMinutes = bellEveryMinutes.clamped(0...Self.maxMinutes)
+        return copy
+    }
 }
 
 struct Practice: Identifiable, Equatable {

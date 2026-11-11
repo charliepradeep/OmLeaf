@@ -24,6 +24,22 @@ struct AppSettings: Codable, Equatable {
     var sound = SoundSettings()
     var haptics = true
     var acknowledgedNote = false
+    var meditation = MeditationSettings()
+
+    init() {}
+
+    /// Older saved settings do not have every key, so each one falls back to its default.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sound = try container.decodeIfPresent(SoundSettings.self, forKey: .sound) ?? SoundSettings()
+        haptics = try container.decodeIfPresent(Bool.self, forKey: .haptics) ?? true
+        acknowledgedNote = try container.decodeIfPresent(Bool.self, forKey: .acknowledgedNote) ?? false
+        meditation = try container.decodeIfPresent(MeditationSettings.self, forKey: .meditation) ?? MeditationSettings()
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sound, haptics, acknowledgedNote, meditation
+    }
 }
 
 /// Everything is stored on this phone in UserDefaults. Nothing leaves the device.
@@ -47,6 +63,7 @@ final class AppStore: ObservableObject {
         self.defaults = defaults
         var loaded = Self.load(AppSettings.self, key: Key.settings, from: defaults) ?? AppSettings()
         loaded.sound = loaded.sound.sanitized()
+        loaded.meditation = loaded.meditation.sanitized()
         self.settings = loaded
         self.custom = Self.load([CustomPractice].self, key: Key.custom, from: defaults) ?? []
         self.history = Self.load([SessionRecord].self, key: Key.history, from: defaults) ?? []
@@ -62,6 +79,11 @@ final class AppStore: ObservableObject {
 
     func saveSound(_ sound: SoundSettings) {
         settings.sound = sound.sanitized()
+        save(settings, key: Key.settings)
+    }
+
+    func saveMeditation(_ meditation: MeditationSettings) {
+        settings.meditation = meditation.sanitized()
         save(settings, key: Key.settings)
     }
 

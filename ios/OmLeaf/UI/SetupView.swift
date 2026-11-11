@@ -138,7 +138,7 @@ private struct SetupForm: View {
 
     private var soundSection: some View {
         Section("Sound") {
-            PitchControls(sound: Binding(
+            PitchControl(hz: Binding(
                 get: { store.settings.sound.frequencyHz },
                 set: { newValue in
                     var sound = store.settings.sound

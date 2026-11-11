@@ -49,7 +49,7 @@ final class SynthStatsTests: XCTestCase {
 
     func testFrequencyIsClamped() {
         XCTAssertEqual(SoundSettings(frequencyHz: 5000).sanitized().frequencyHz, FrequencyPresets.maxHz)
-        XCTAssertEqual(SoundSettings(frequencyHz: 1).sanitized().frequencyHz, FrequencyPresets.minHz)
+        XCTAssertEqual(SoundSettings(frequencyHz: -1).sanitized().frequencyHz, FrequencyPresets.minHz)
     }
 
     private func record(_ day: Int, _ seconds: Int = 600) -> SessionRecord {

@@ -14,7 +14,7 @@ struct SettingsView: View {
                     Text("Volume")
                     Slider(value: soundBinding(\.volume), in: 0...1)
                 }
-                PitchControls(sound: soundBinding(\.frequencyHz))
+                PitchControl(hz: soundBinding(\.frequencyHz))
                 Toggle("Phase chimes", isOn: soundBinding(\.chimes))
                 Toggle("Guide tone while chanting", isOn: soundBinding(\.guideTone))
                 Toggle("Soft drone", isOn: soundBinding(\.drone))
@@ -80,28 +80,5 @@ struct SettingsView: View {
                 preview = nil
             }
         }
-    }
-}
-
-/// The pitch readout, the preset chips and the free slider (shared with the setup screen).
-struct PitchControls: View {
-    @Binding var sound: Double
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Pitch: \(String(format: "%.1f", sound)) Hz")
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
-                    ForEach(FrequencyPresets.all) { preset in
-                        let selected = abs(sound - preset.hz) < 0.05
-                        Button("\(preset.name) · \(String(format: "%.1f", preset.hz))") { sound = preset.hz }
-                            .buttonStyle(.bordered)
-                            .tint(selected ? .omTeal : .secondary)
-                    }
-                }
-            }
-            Slider(value: $sound, in: FrequencyPresets.minHz...FrequencyPresets.maxHz)
-        }
-        .padding(.vertical, 4)
     }
 }

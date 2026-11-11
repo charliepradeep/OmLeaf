@@ -82,7 +82,8 @@ private struct SessionRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.practice).font(.headline)
-                Text("\(dateText) · \(record.rounds) rounds").font(.caption).foregroundStyle(.secondary)
+                Text(record.rounds > 0 ? "\(dateText) · \(record.rounds) rounds" : dateText)
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             Text("\(max(1, record.seconds / 60)) min").font(.headline).foregroundStyle(Color.omTeal)
