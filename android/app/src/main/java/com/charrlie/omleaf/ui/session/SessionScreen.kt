@@ -1,6 +1,11 @@
 package com.charrlie.omleaf.ui.session
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.foundation.Canvas
@@ -49,6 +54,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.charrlie.omleaf.audio.SessionRunner
+import com.charrlie.omleaf.audio.SessionService
 import com.charrlie.omleaf.domain.ChantSound
 import com.charrlie.omleaf.domain.Nostril
 import com.charrlie.omleaf.domain.Phase
@@ -98,13 +104,14 @@ fun SessionScreen(vm: AppViewModel, spec: SessionSpec, onClose: () -> Unit) {
         onDispose {
             view.keepScreenOn = false
             runner.stop()
+            SessionService.stop(context)
         }
     }
 
     // Pause when the app goes to the background; the person resumes with the button.
     DisposableEffect(lifecycle, spec) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && started && !finished) {
+            if (event == Lifecycle.Event.ON_STOP && started && !finished && !spec.keepPlaying) {
                 runner.pause()
                 paused = true
             }
@@ -113,11 +120,33 @@ fun SessionScreen(vm: AppViewModel, spec: SessionSpec, onClose: () -> Unit) {
         onDispose { lifecycle.removeObserver(observer) }
     }
 
+    // Android 13+ asks once so the "playing" notification can show; sound works either way.
+    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(spec) {
+        if (spec.keepPlaying && Build.VERSION.SDK_INT >= 33 &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
     // Three quiet seconds to get ready, then the audio starts.
     LaunchedEffect(spec) {
         while (countdown > 0) { delay(1000); countdown-- }
         started = true
         runner.start()
+        if (spec.keepPlaying) SessionService.start(context, spec.title)
+    }
+
+    // The frame loop stops with the screen, so poll the clock for the end while locked.
+    LaunchedEffect(started, spec) {
+        if (!started) return@LaunchedEffect
+        while (isActive && !finished) {
+            delay(500)
+            if (runner.elapsedMs() >= plan.totalMs) {
+                elapsed = runner.elapsedMs()
+                finished = true
+                saveIfWorthIt((plan.totalMs / 1000).toInt(), plan.rounds)
+            }
+        }
     }
 
     // One frame loop drives the animation from the audio clock.
@@ -137,7 +166,7 @@ fun SessionScreen(vm: AppViewModel, spec: SessionSpec, onClose: () -> Unit) {
 
     // Let the last chime ring, then release the audio.
     LaunchedEffect(finished) {
-        if (finished) { delay(2500); runner.stop() }
+        if (finished) { delay(2500); runner.stop(); SessionService.stop(context) }
     }
 
     // A short tap at every change of phase.

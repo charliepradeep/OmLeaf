@@ -105,6 +105,7 @@ private fun SettingsContent(vm: AppViewModel, settings: AppSettings) {
         SectionTitle("Feel")
         Card {
             SwitchRow("Vibrate at each change of breath", settings.haptics) { vm.saveHaptics(it) }
+            SwitchRow("Keep playing when the screen is locked", settings.keepPlaying) { vm.saveKeepPlaying(it) }
         }
 
         SectionTitle("Data")

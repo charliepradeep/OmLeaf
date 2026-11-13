@@ -25,6 +25,10 @@ struct SettingsView: View {
             }
             Section("Feel") {
                 Toggle("Vibrate at each change of breath", isOn: Binding(get: { store.settings.haptics }, set: { store.saveHaptics($0) }))
+                Toggle(
+                    "Keep playing when the screen is locked",
+                    isOn: Binding(get: { store.settings.keepPlaying }, set: { store.saveKeepPlaying($0) })
+                )
             }
             Section("Data") {
                 Text("Your practice history is stored only on this phone.").font(.subheadline).foregroundStyle(.secondary)

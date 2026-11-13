@@ -30,7 +30,8 @@ struct MeditationView: View {
                 Button {
                     session = SessionSpec(
                         title: "Sound meditation", request: Planner.meditationRequest(med),
-                        sound: store.settings.sound, haptics: store.settings.haptics
+                        sound: store.settings.sound, haptics: store.settings.haptics,
+                        keepPlaying: store.settings.keepPlaying
                     )
                 } label: {
                     Label("Begin", systemImage: "play.fill").frame(maxWidth: .infinity)

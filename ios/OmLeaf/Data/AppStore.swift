@@ -23,6 +23,7 @@ struct CustomPractice: Codable, Identifiable, Equatable {
 struct AppSettings: Codable, Equatable {
     var sound = SoundSettings()
     var haptics = true
+    var keepPlaying = true
     var acknowledgedNote = false
     var meditation = MeditationSettings()
 
@@ -33,12 +34,13 @@ struct AppSettings: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         sound = try container.decodeIfPresent(SoundSettings.self, forKey: .sound) ?? SoundSettings()
         haptics = try container.decodeIfPresent(Bool.self, forKey: .haptics) ?? true
+        keepPlaying = try container.decodeIfPresent(Bool.self, forKey: .keepPlaying) ?? true
         acknowledgedNote = try container.decodeIfPresent(Bool.self, forKey: .acknowledgedNote) ?? false
         meditation = try container.decodeIfPresent(MeditationSettings.self, forKey: .meditation) ?? MeditationSettings()
     }
 
     private enum CodingKeys: String, CodingKey {
-        case sound, haptics, acknowledgedNote, meditation
+        case sound, haptics, keepPlaying, acknowledgedNote, meditation
     }
 }
 
@@ -89,6 +91,11 @@ final class AppStore: ObservableObject {
 
     func saveHaptics(_ on: Bool) {
         settings.haptics = on
+        save(settings, key: Key.settings)
+    }
+
+    func saveKeepPlaying(_ on: Bool) {
+        settings.keepPlaying = on
         save(settings, key: Key.settings)
     }
 

@@ -26,6 +26,7 @@ data class SessionSpec(
     val request: PlanRequest,
     val sound: SoundSettings,
     val haptics: Boolean,
+    val keepPlaying: Boolean = true,
 )
 
 class AppViewModel(private val repo: Repository) : ViewModel() {
@@ -37,6 +38,7 @@ class AppViewModel(private val repo: Repository) : ViewModel() {
     var pending: SessionSpec? by mutableStateOf(null)
 
     fun saveSound(sound: SoundSettings) = viewModelScope.launch { repo.saveSound(sound) }
+    fun saveKeepPlaying(on: Boolean) = viewModelScope.launch { repo.saveKeepPlaying(on) }
     fun saveMeditation(m: MeditationSettings) = viewModelScope.launch { repo.saveMeditation(m) }
     fun saveHaptics(on: Boolean) = viewModelScope.launch { repo.saveHaptics(on) }
     fun saveCustom(item: CustomPractice) = viewModelScope.launch { repo.saveCustom(item) }

@@ -48,7 +48,7 @@ struct SessionView: View {
         .task { await countDown() }
         .onReceive(ticker) { _ in tick() }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .background && started && !finished { pause() }
+            if phase == .background && started && !finished && !spec.keepPlaying { pause() }
         }
         .onChange(of: stepIndex) { _, _ in
             let step = plan.steps[stepIndex]
@@ -61,6 +61,7 @@ struct SessionView: View {
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
             runner?.stop()
+            LockScreen.clear()
         }
         .confirmationDialog("End this session?", isPresented: $confirmEnd, titleVisibility: .visible) {
             Button("End", role: .destructive) {
@@ -118,6 +119,13 @@ struct SessionView: View {
         newRunner.start()
         runner = newRunner
         started = true
+        if spec.keepPlaying {
+            LockScreen.show(
+                title: spec.title, durationMs: plan.totalMs,
+                onPlay: { if runner?.paused == true { togglePause() } },
+                onPause: { if runner?.paused == false { togglePause() } }
+            )
+        }
     }
 
     /// The animation is driven from the audio clock, so sound and screen cannot drift apart.
@@ -125,6 +133,7 @@ struct SessionView: View {
         guard started, !finished, let runner else { return }
         elapsed = runner.elapsedMs()
         paused = runner.paused
+        if spec.keepPlaying { LockScreen.update(elapsedMs: elapsed, paused: paused) }
         if elapsed >= plan.totalMs {
             finished = true
             saveIfWorthIt(seconds: plan.totalMs / 1000, rounds: plan.style != nil ? 0 : plan.rounds)

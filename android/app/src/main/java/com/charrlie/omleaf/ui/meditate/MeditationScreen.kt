@@ -159,7 +159,7 @@ fun MeditationScreen(vm: AppViewModel, onBegin: () -> Unit, onBack: () -> Unit) 
             )
             Button(
                 onClick = {
-                    vm.pending = SessionSpec("Sound meditation", Planner.meditationRequest(med), sound, loaded.haptics)
+                    vm.pending = SessionSpec("Sound meditation", Planner.meditationRequest(med), sound, loaded.haptics, loaded.keepPlaying)
                     onBegin()
                 },
                 modifier = Modifier.fillMaxWidth(),

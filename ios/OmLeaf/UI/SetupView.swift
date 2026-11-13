@@ -7,6 +7,7 @@ struct SessionSpec: Identifiable {
     let request: PlanRequest
     let sound: SoundSettings
     let haptics: Bool
+    var keepPlaying = true
 }
 
 struct SetupView: View {
@@ -159,7 +160,8 @@ private struct SetupForm: View {
             Button {
                 session = SessionSpec(
                     title: name.isEmpty ? practice.name : name, request: request,
-                    sound: store.settings.sound, haptics: store.settings.haptics
+                    sound: store.settings.sound, haptics: store.settings.haptics,
+                    keepPlaying: store.settings.keepPlaying
                 )
             } label: {
                 Label("Begin", systemImage: "play.fill").frame(maxWidth: .infinity)

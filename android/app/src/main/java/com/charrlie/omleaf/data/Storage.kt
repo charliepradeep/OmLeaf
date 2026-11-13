@@ -58,6 +58,7 @@ private data class StoredSession(val epochDay: Long, val practice: String, val s
 data class AppSettings(
     val sound: SoundSettings = SoundSettings(),
     val haptics: Boolean = true,
+    val keepPlaying: Boolean = true,
     val acknowledgedNote: Boolean = false,
     val meditation: MeditationSettings = MeditationSettings(),
 )
@@ -73,6 +74,7 @@ class Repository(private val context: Context) {
         val drone = booleanPreferencesKey("drone")
         val volume = floatPreferencesKey("volume")
         val haptics = booleanPreferencesKey("haptics")
+        val keepPlaying = booleanPreferencesKey("keep_playing")
         val acknowledged = booleanPreferencesKey("acknowledged")
         val custom = stringPreferencesKey("custom")
         val history = stringPreferencesKey("history")
@@ -93,6 +95,7 @@ class Repository(private val context: Context) {
                 volume = p[Keys.volume] ?: d.volume,
             ).sanitized(),
             haptics = p[Keys.haptics] ?: true,
+            keepPlaying = p[Keys.keepPlaying] ?: true,
             acknowledgedNote = p[Keys.acknowledged] ?: false,
             meditation = MeditationSettings(
                 minutes = p[Keys.medMinutes] ?: MeditationSettings().minutes,
@@ -136,6 +139,7 @@ class Repository(private val context: Context) {
     }
 
     suspend fun saveHaptics(on: Boolean) { context.store.edit { it[Keys.haptics] = on } }
+    suspend fun saveKeepPlaying(on: Boolean) { context.store.edit { it[Keys.keepPlaying] = on } }
 
     suspend fun acknowledgeNote() { context.store.edit { it[Keys.acknowledged] = true } }
 

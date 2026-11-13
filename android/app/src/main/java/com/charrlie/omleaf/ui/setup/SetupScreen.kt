@@ -196,7 +196,7 @@ private fun SetupContent(vm: AppViewModel, practice: Practice, settings: AppSett
             Text("About ${formatDuration(total)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(
                 onClick = {
-                    vm.pending = SessionSpec(name.ifBlank { practice.name }, request(), sound, settings.haptics)
+                    vm.pending = SessionSpec(name.ifBlank { practice.name }, request(), sound, settings.haptics, settings.keepPlaying)
                     onBegin()
                 },
                 modifier = Modifier.fillMaxWidth(),

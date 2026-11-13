@@ -5,6 +5,11 @@
     <!-- Short vibration at each change of breath phase (can be turned off in Settings). -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Lets a session keep playing, with a small notification, when the screen is locked. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- OmLeaf never uses the network. Make sure no library adds this permission back. -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
 
@@ -29,5 +34,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".audio.SessionService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
     </application>
 </manifest>

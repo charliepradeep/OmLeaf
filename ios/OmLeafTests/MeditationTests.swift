@@ -146,4 +146,10 @@ final class MeditationStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.settings.meditation.bellEveryMinutes, 5)
         XCTAssertFalse(reloaded.settings.meditation.bells)
     }
+
+    func testKeepPlayingDefaultsOnForOldSettings() throws {
+        let old = #"{"sound":{"frequencyHz":432,"chimes":false,"guideTone":true,"drone":false,"volume":0.5},"haptics":false}"#
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: Data(old.utf8))
+        XCTAssertTrue(decoded.keepPlaying)
+    }
 }
