@@ -20,8 +20,17 @@ jobs:
         run: swiftlint
       - name: Generate project
         run: xcodegen generate
+      - name: Pick a simulator
+        run: |
+          xcrun simctl list devices available | grep -q iPhone || xcodebuild -downloadPlatform iOS
+          UDID=$(xcrun simctl list devices available | grep -E 'iPhone' | head -1 | grep -oE '[0-9A-F-]{36}')
+          if [ -z "$UDID" ]; then
+            RUNTIME=$(xcrun simctl list runtimes available | grep -oE 'com.apple.CoreSimulator.SimRuntime.iOS-[0-9-]+' | tail -1)
+            UDID=$(xcrun simctl create "OmLeaf CI" com.apple.CoreSimulator.SimDeviceType.iPhone-16 "$RUNTIME")
+          fi
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
       - name: Build and test
         run: |
           xcodebuild -project OmLeaf.xcodeproj -scheme OmLeaf \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
             CODE_SIGNING_ALLOWED=NO test
