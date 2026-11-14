@@ -126,6 +126,10 @@ final class MeditationTests: XCTestCase {
 
 @MainActor
 final class MeditationStoreTests: XCTestCase {
+    private func plan(_ settings: MeditationSettings) -> Plan {
+        Planner.build(Planner.meditationRequest(settings))
+    }
+
     func testMeditationSettingsPersistAndOldSettingsStillLoad() throws {
         let name = "omleaf.tests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
