@@ -57,7 +57,7 @@ struct SessionView: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
         }
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = spec.request.meditation?.sleep != true }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
             runner?.stop()

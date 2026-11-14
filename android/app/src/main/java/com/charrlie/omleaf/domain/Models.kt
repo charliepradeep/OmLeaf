@@ -100,6 +100,8 @@ data class MeditationSettings(
     val bellEveryMinutes: Int = 0,
     /** A bowl at the very start and a closing bowl at the end. */
     val bells: Boolean = true,
+    /** Sleep mode: no bowls, a very slow fade over the last minutes, then everything stops by itself. */
+    val sleep: Boolean = false,
 ) {
     fun sanitized() = copy(minutes = minutes.coerceIn(MIN_MINUTES, MAX_MINUTES), bellEveryMinutes = bellEveryMinutes.coerceIn(0, MAX_MINUTES))
 

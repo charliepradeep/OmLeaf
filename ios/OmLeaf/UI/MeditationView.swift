@@ -21,6 +21,7 @@ struct MeditationView: View {
             }
             timeSection
             styleSection
+            sleepSection
             bellSection
             Section("Pitch") {
                 PitchControl(hz: pitchBinding)
@@ -85,6 +86,16 @@ struct MeditationView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var sleepSection: some View {
+        Section {
+            Toggle("Sleep mode", isOn: Binding(get: { med.sleep }, set: { value in update { $0.sleep = value } }))
+        } header: {
+            Text("Sleep")
+        } footer: {
+            Text("No bowls. The sound fades away slowly over the last ten minutes, the screen may turn off, and OmLeaf stops by itself.")
         }
     }
 

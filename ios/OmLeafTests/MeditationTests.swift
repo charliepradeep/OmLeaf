@@ -169,4 +169,22 @@ final class MeditationStoreTests: XCTestCase {
         store.saveReminder(on: false, minute: 19 * 60 + 30)
         XCTAssertEqual(AppStore(defaults: defaults).settings.reminderMinute, 19 * 60 + 30)
     }
+
+    func testSleepModeHasNoBowlsAndAVeryLongFade() {
+        let result = plan(MeditationSettings(minutes: 30, bellEveryMinutes: 5, bells: true, sleep: true))
+        XCTAssertTrue(result.steps.allSatisfy { !$0.bell })
+        XCTAssertEqual(result.fadeOutMs, 600_000)
+        XCTAssertEqual(result.totalMs, 30 * 60_000)
+    }
+
+    func testSleepFadeNeverExceedsHalfTheSession() {
+        XCTAssertEqual(plan(MeditationSettings(minutes: 4, sleep: true)).fadeOutMs, 120_000)
+    }
+
+    func testOldMeditationSettingsLoadWithoutSleepKey() throws {
+        let old = #"{"minutes":25,"style":"bowl","bellEveryMinutes":5,"bells":false}"#
+        let decoded = try JSONDecoder().decode(MeditationSettings.self, from: Data(old.utf8))
+        XCTAssertEqual(decoded.minutes, 25)
+        XCTAssertFalse(decoded.sleep)
+    }
 }

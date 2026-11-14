@@ -118,6 +118,21 @@ fun MeditationScreen(vm: AppViewModel, onBegin: () -> Unit, onBack: () -> Unit) 
             }
         }
 
+        SectionTitle("Sleep")
+        Card {
+            Column(Modifier.padding(vertical = 8.dp)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Sleep mode", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Switch(checked = med.sleep, onCheckedChange = { update(med.copy(sleep = it)) })
+                }
+                Text(
+                    "No bowls. The sound fades away slowly over the last ten minutes, the screen may turn off, and OmLeaf stops by itself.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+        }
+
         SectionTitle("Bowls")
         Card {
             Column(Modifier.padding(vertical = 8.dp)) {

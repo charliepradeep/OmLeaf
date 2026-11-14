@@ -92,6 +92,8 @@ enum Planner {
     static let chantMs = 12_000
     static let pauseMs = 4_000
     static let fadeOutMs = 15_000
+    /// In sleep mode the sound dies away over up to this long (never more than half the session).
+    static let sleepFadeMs = 600_000
 
     /// A sound-only meditation: no breaths, just listening.
     static func meditationRequest(_ settings: MeditationSettings) -> PlanRequest {
@@ -128,7 +130,8 @@ enum Planner {
     private static func buildMeditation(_ med: MeditationSettings) -> Plan {
         let totalMs = med.minutes * 60_000
         let mainMs = totalMs - min(closingMs, totalMs / 2)
-        let interval = (1..<med.minutes).contains(med.bellEveryMinutes) ? med.bellEveryMinutes * 60_000 : mainMs
+        let bells = med.bells && !med.sleep
+        let interval = !med.sleep && (1..<med.minutes).contains(med.bellEveryMinutes) ? med.bellEveryMinutes * 60_000 : mainMs
         var builder = StepBuilder()
         var time: Int { builder.time }
 
@@ -140,7 +143,7 @@ enum Planner {
         var segment = 0
         while segmentStart < mainMs {
             let segmentEnd = min(segmentStart + interval, mainMs)
-            var bell = segment == 0 ? med.bells : true
+            var bell = segment == 0 ? bells : !med.sleep
             if med.style == .aum {
                 while time < segmentEnd {
                     add(min(chantMs, segmentEnd - time), chant: .aum, bell: bell)
@@ -153,8 +156,8 @@ enum Planner {
             segmentStart = segmentEnd
             segment += 1
         }
-        add(totalMs - time, chant: .none, bell: med.bells)
-        return Plan(steps: builder.steps, rounds: 1, style: med.style, fadeOutMs: min(fadeOutMs, totalMs / 2))
+        add(totalMs - time, chant: .none, bell: bells)
+        return Plan(steps: builder.steps, rounds: 1, style: med.style, fadeOutMs: min(med.sleep ? sleepFadeMs : fadeOutMs, totalMs / 2))
     }
 
     private static func addBreaths(_ request: PlanRequest, rounds: Int, to builder: inout StepBuilder) {

@@ -129,4 +129,20 @@ class MeditationTest {
         assertEquals("136.1", Pitch.format(136.1))
     }
 
+
+    @Test fun sleepModeHasNoBowlsAndAVeryLongFade() {
+        val p = plan(MeditationSettings(minutes = 30, bells = true, bellEveryMinutes = 5, sleep = true))
+        assertTrue(p.steps.none { it.bell })
+        assertEquals(600_000L, p.fadeOutMs)
+        assertEquals(30 * 60_000L, p.totalMs)
+    }
+
+    @Test fun sleepFadeNeverExceedsHalfTheSession() {
+        val p = plan(MeditationSettings(minutes = 4, sleep = true))
+        assertEquals(120_000L, p.fadeOutMs)
+    }
+
+    @Test fun normalModeKeepsShortFade() {
+        assertEquals(15_000L, plan(MeditationSettings(minutes = 30)).fadeOutMs)
+    }
 }

@@ -175,6 +175,30 @@ struct MeditationSettings: Codable, Equatable {
     var bellEveryMinutes = 0
     /// A bowl at the very start and a closing bowl at the end.
     var bells = true
+    /// Sleep mode: no bowls, a very slow fade over the last minutes, then everything stops by itself.
+    var sleep = false
+
+    init(minutes: Int = 10, style: MeditationStyle = .drone, bellEveryMinutes: Int = 0, bells: Bool = true, sleep: Bool = false) {
+        self.minutes = minutes
+        self.style = style
+        self.bellEveryMinutes = bellEveryMinutes
+        self.bells = bells
+        self.sleep = sleep
+    }
+
+    /// Settings saved before sleep mode existed have no "sleep" key.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        minutes = try c.decodeIfPresent(Int.self, forKey: .minutes) ?? 10
+        style = try c.decodeIfPresent(MeditationStyle.self, forKey: .style) ?? .drone
+        bellEveryMinutes = try c.decodeIfPresent(Int.self, forKey: .bellEveryMinutes) ?? 0
+        bells = try c.decodeIfPresent(Bool.self, forKey: .bells) ?? true
+        sleep = try c.decodeIfPresent(Bool.self, forKey: .sleep) ?? false
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case minutes, style, bellEveryMinutes, bells, sleep
+    }
 
     func sanitized() -> MeditationSettings {
         var copy = self

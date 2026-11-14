@@ -71,6 +71,9 @@ object Planner {
     const val PAUSE_MS = 4_000L
     const val FADE_OUT_MS = 15_000L
 
+    /** In sleep mode the sound dies away over up to this long (never more than half the session). */
+    const val SLEEP_FADE_MS = 600_000L
+
     /** A sound-only meditation: no breaths, just listening. */
     fun meditationRequest(m: MeditationSettings) = PlanRequest(
         kind = Kind.MEDITATION, pattern = BreathPattern(4.0, 0.0, 6.0, 0.0), rounds = 1, chant = ChantSound.NONE, meditation = m,
@@ -137,7 +140,8 @@ object Planner {
     private fun buildMeditation(m: MeditationSettings): Plan {
         val totalMs = m.minutes * 60_000L
         val mainMs = totalMs - minOf(CLOSING_MS, totalMs / 2)
-        val interval = if (m.bellEveryMinutes in 1 until m.minutes) m.bellEveryMinutes * 60_000L else mainMs
+        val bells = m.bells && !m.sleep
+        val interval = if (!m.sleep && m.bellEveryMinutes in 1 until m.minutes) m.bellEveryMinutes * 60_000L else mainMs
         val steps = ArrayList<Step>()
         var t = 0L
 
@@ -151,7 +155,7 @@ object Planner {
         var segment = 0
         while (segmentStart < mainMs) {
             val segmentEnd = minOf(segmentStart + interval, mainMs)
-            var bell = if (segment == 0) m.bells else true
+            var bell = if (segment == 0) bells else !m.sleep
             if (m.style == MeditationStyle.AUM) {
                 while (t < segmentEnd) {
                     add(minOf(CHANT_MS, segmentEnd - t), ChantSound.AUM, bell)
@@ -164,7 +168,7 @@ object Planner {
             segmentStart = segmentEnd
             segment++
         }
-        add(totalMs - t, ChantSound.NONE, m.bells)
-        return Plan(steps, 1, m.style, minOf(FADE_OUT_MS, totalMs / 2))
+        add(totalMs - t, ChantSound.NONE, bells)
+        return Plan(steps, 1, m.style, minOf(if (m.sleep) SLEEP_FADE_MS else FADE_OUT_MS, totalMs / 2))
     }
 }

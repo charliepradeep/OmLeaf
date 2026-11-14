@@ -86,6 +86,7 @@ class Repository(private val context: Context) {
         val medStyle = stringPreferencesKey("med_style")
         val medBellEvery = intPreferencesKey("med_bell_every")
         val medBells = booleanPreferencesKey("med_bells")
+        val medSleep = booleanPreferencesKey("med_sleep")
         val reminderOn = booleanPreferencesKey("reminder_on")
         val reminderMinute = intPreferencesKey("reminder_minute")
     }
@@ -110,6 +111,7 @@ class Repository(private val context: Context) {
                 style = runCatching { MeditationStyle.valueOf(p[Keys.medStyle].orEmpty()) }.getOrDefault(MeditationStyle.DRONE),
                 bellEveryMinutes = p[Keys.medBellEvery] ?: 0,
                 bells = p[Keys.medBells] ?: true,
+                sleep = p[Keys.medSleep] ?: false,
             ).sanitized(),
         )
     }
@@ -143,6 +145,7 @@ class Repository(private val context: Context) {
             it[Keys.medStyle] = s.style.name
             it[Keys.medBellEvery] = s.bellEveryMinutes
             it[Keys.medBells] = s.bells
+            it[Keys.medSleep] = s.sleep
         }
     }
 

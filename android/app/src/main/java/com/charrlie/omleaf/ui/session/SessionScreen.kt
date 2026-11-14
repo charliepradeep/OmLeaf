@@ -100,7 +100,7 @@ fun SessionScreen(vm: AppViewModel, spec: SessionSpec, onClose: () -> Unit) {
 
     // Keep the screen awake, stop the audio when the screen is left.
     DisposableEffect(spec) {
-        view.keepScreenOn = true
+        view.keepScreenOn = spec.request.meditation?.sleep != true
         onDispose {
             view.keepScreenOn = false
             runner.stop()
