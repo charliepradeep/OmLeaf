@@ -39,6 +39,7 @@ class AppViewModel(private val repo: Repository) : ViewModel() {
 
     fun saveSound(sound: SoundSettings) = viewModelScope.launch { repo.saveSound(sound) }
     fun saveKeepPlaying(on: Boolean) = viewModelScope.launch { repo.saveKeepPlaying(on) }
+    fun saveReminder(on: Boolean, minuteOfDay: Int) = viewModelScope.launch { repo.saveReminder(on, minuteOfDay) }
     fun saveMeditation(m: MeditationSettings) = viewModelScope.launch { repo.saveMeditation(m) }
     fun saveHaptics(on: Boolean) = viewModelScope.launch { repo.saveHaptics(on) }
     fun saveCustom(item: CustomPractice) = viewModelScope.launch { repo.saveCustom(item) }

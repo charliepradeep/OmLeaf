@@ -6,6 +6,19 @@ struct SettingsView: View {
     @State private var preview: SessionRunner?
     @State private var previewTask: Task<Void, Never>?
 
+    private var reminderTime: Binding<Date> {
+        Binding(
+            get: {
+                let m = store.settings.reminderMinute
+                return Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
+            },
+            set: { date in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+                store.saveReminder(on: true, minute: (c.hour ?? 7) * 60 + (c.minute ?? 0))
+            }
+        )
+    }
+
     var body: some View {
         let sound = store.settings.sound
         Form {
@@ -29,6 +42,15 @@ struct SettingsView: View {
                     "Keep playing when the screen is locked",
                     isOn: Binding(get: { store.settings.keepPlaying }, set: { store.saveKeepPlaying($0) })
                 )
+            }
+            Section("Reminder") {
+                Toggle("Remind me every day", isOn: Binding(
+                    get: { store.settings.reminderOn },
+                    set: { store.saveReminder(on: $0, minute: store.settings.reminderMinute) }
+                ))
+                if store.settings.reminderOn {
+                    DatePicker("Time", selection: reminderTime, displayedComponents: .hourAndMinute)
+                }
             }
             Section("Data") {
                 Text("Your practice history is stored only on this phone.").font(.subheadline).foregroundStyle(.secondary)

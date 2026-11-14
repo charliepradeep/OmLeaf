@@ -1,5 +1,7 @@
 package com.charrlie.omleaf.data
 
+import com.charrlie.omleaf.audio.ReminderReceiver
+import com.charrlie.omleaf.domain.Reminder
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -59,6 +61,8 @@ data class AppSettings(
     val sound: SoundSettings = SoundSettings(),
     val haptics: Boolean = true,
     val keepPlaying: Boolean = true,
+    val reminderOn: Boolean = false,
+    val reminderMinute: Int = Reminder.DEFAULT_MINUTE,
     val acknowledgedNote: Boolean = false,
     val meditation: MeditationSettings = MeditationSettings(),
 )
@@ -82,6 +86,8 @@ class Repository(private val context: Context) {
         val medStyle = stringPreferencesKey("med_style")
         val medBellEvery = intPreferencesKey("med_bell_every")
         val medBells = booleanPreferencesKey("med_bells")
+        val reminderOn = booleanPreferencesKey("reminder_on")
+        val reminderMinute = intPreferencesKey("reminder_minute")
     }
 
     val settings: Flow<AppSettings> = context.store.data.map { p ->
@@ -96,6 +102,8 @@ class Repository(private val context: Context) {
             ).sanitized(),
             haptics = p[Keys.haptics] ?: true,
             keepPlaying = p[Keys.keepPlaying] ?: true,
+            reminderOn = p[Keys.reminderOn] ?: false,
+            reminderMinute = Reminder.clamp(p[Keys.reminderMinute] ?: Reminder.DEFAULT_MINUTE),
             acknowledgedNote = p[Keys.acknowledged] ?: false,
             meditation = MeditationSettings(
                 minutes = p[Keys.medMinutes] ?: MeditationSettings().minutes,
@@ -139,6 +147,11 @@ class Repository(private val context: Context) {
     }
 
     suspend fun saveHaptics(on: Boolean) { context.store.edit { it[Keys.haptics] = on } }
+    suspend fun saveReminder(on: Boolean, minuteOfDay: Int) {
+        val m = Reminder.clamp(minuteOfDay)
+        context.store.edit { it[Keys.reminderOn] = on; it[Keys.reminderMinute] = m }
+        if (on) ReminderReceiver.schedule(context, m) else ReminderReceiver.cancel(context)
+    }
     suspend fun saveKeepPlaying(on: Boolean) { context.store.edit { it[Keys.keepPlaying] = on } }
 
     suspend fun acknowledgeNote() { context.store.edit { it[Keys.acknowledged] = true } }

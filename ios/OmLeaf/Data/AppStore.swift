@@ -24,6 +24,8 @@ struct AppSettings: Codable, Equatable {
     var sound = SoundSettings()
     var haptics = true
     var keepPlaying = true
+    var reminderOn = false
+    var reminderMinute = Reminder.defaultMinute
     var acknowledgedNote = false
     var meditation = MeditationSettings()
 
@@ -35,12 +37,14 @@ struct AppSettings: Codable, Equatable {
         sound = try container.decodeIfPresent(SoundSettings.self, forKey: .sound) ?? SoundSettings()
         haptics = try container.decodeIfPresent(Bool.self, forKey: .haptics) ?? true
         keepPlaying = try container.decodeIfPresent(Bool.self, forKey: .keepPlaying) ?? true
+        reminderOn = try container.decodeIfPresent(Bool.self, forKey: .reminderOn) ?? false
+        reminderMinute = Reminder.clamp(try container.decodeIfPresent(Int.self, forKey: .reminderMinute) ?? Reminder.defaultMinute)
         acknowledgedNote = try container.decodeIfPresent(Bool.self, forKey: .acknowledgedNote) ?? false
         meditation = try container.decodeIfPresent(MeditationSettings.self, forKey: .meditation) ?? MeditationSettings()
     }
 
     private enum CodingKeys: String, CodingKey {
-        case sound, haptics, keepPlaying, acknowledgedNote, meditation
+        case sound, haptics, keepPlaying, reminderOn, reminderMinute, acknowledgedNote, meditation
     }
 }
 
@@ -92,6 +96,17 @@ final class AppStore: ObservableObject {
     func saveHaptics(_ on: Bool) {
         settings.haptics = on
         save(settings, key: Key.settings)
+    }
+
+    func saveReminder(on: Bool, minute: Int) {
+        settings.reminderOn = on
+        settings.reminderMinute = Reminder.clamp(minute)
+        save(settings, key: Key.settings)
+        if on {
+            ReminderScheduler.schedule(minuteOfDay: settings.reminderMinute)
+        } else {
+            ReminderScheduler.cancel()
+        }
     }
 
     func saveKeepPlaying(_ on: Bool) {

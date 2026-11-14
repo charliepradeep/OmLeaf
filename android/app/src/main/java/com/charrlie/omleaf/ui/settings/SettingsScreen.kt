@@ -39,6 +39,7 @@ import com.charrlie.omleaf.domain.ChantSound
 import com.charrlie.omleaf.domain.FrequencyPresets
 import com.charrlie.omleaf.domain.Kind
 import com.charrlie.omleaf.domain.PlanRequest
+import com.charrlie.omleaf.domain.Reminder
 import com.charrlie.omleaf.domain.Planner
 import com.charrlie.omleaf.domain.SoundSettings
 import com.charrlie.omleaf.ui.AppViewModel
@@ -59,6 +60,9 @@ fun SettingsScreen(vm: AppViewModel) {
 private fun SettingsContent(vm: AppViewModel, settings: AppSettings) {
     val context = LocalContext.current
     var sound by remember(settings.sound) { mutableStateOf(settings.sound) }
+    val askNotifications = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { }
     var confirmClear by remember { mutableStateOf(false) }
     var previewing by remember { mutableStateOf(false) }
 
@@ -106,6 +110,27 @@ private fun SettingsContent(vm: AppViewModel, settings: AppSettings) {
         Card {
             SwitchRow("Vibrate at each change of breath", settings.haptics) { vm.saveHaptics(it) }
             SwitchRow("Keep playing when the screen is locked", settings.keepPlaying) { vm.saveKeepPlaying(it) }
+        }
+
+        SectionTitle("Reminder")
+        Card {
+            SwitchRow("Remind me every day", settings.reminderOn) { on ->
+                if (on && android.os.Build.VERSION.SDK_INT >= 33 &&
+                    context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) askNotifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                vm.saveReminder(on, settings.reminderMinute)
+            }
+            if (settings.reminderOn) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Time", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    OutlinedButton(onClick = {
+                        val m = settings.reminderMinute
+                        android.app.TimePickerDialog(
+                            context, { _, h, min -> vm.saveReminder(true, h * 60 + min) }, m / 60, m % 60, false,
+                        ).show()
+                    }) { Text(Reminder.label(settings.reminderMinute)) }
+                }
+            }
         }
 
         SectionTitle("Data")

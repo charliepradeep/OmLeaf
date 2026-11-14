@@ -152,4 +152,21 @@ final class MeditationStoreTests: XCTestCase {
         let decoded = try JSONDecoder().decode(AppSettings.self, from: Data(old.utf8))
         XCTAssertTrue(decoded.keepPlaying)
     }
+
+    func testReminderClampAndLabel() {
+        XCTAssertEqual(Reminder.clamp(-5), 0)
+        XCTAssertEqual(Reminder.clamp(5000), 1439)
+        XCTAssertEqual(Reminder.label(5), "12:05 AM")
+        XCTAssertEqual(Reminder.label(420), "7:00 AM")
+        XCTAssertEqual(Reminder.label(720), "12:00 PM")
+        XCTAssertEqual(Reminder.label(21 * 60 + 45), "9:45 PM")
+    }
+
+    func testReminderDefaultsOffAndPersists() {
+        let defaults = UserDefaults(suiteName: "reminder-test-\(UUID().uuidString)")!
+        let store = AppStore(defaults: defaults)
+        XCTAssertFalse(store.settings.reminderOn)
+        store.saveReminder(on: false, minute: 19 * 60 + 30)
+        XCTAssertEqual(AppStore(defaults: defaults).settings.reminderMinute, 19 * 60 + 30)
+    }
 }
